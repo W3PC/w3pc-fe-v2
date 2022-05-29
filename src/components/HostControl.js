@@ -219,7 +219,9 @@ const HostControls = ({ player, totalGameCredits, totalGameUsdc, refetch }) => {
             min={-memberCredits?.data?.toNumber()}
             disabled={loading}
           />
-          <Text>= {memberCredits.data.add(inputValue).toString()} credits</Text>
+          <Text>
+            = {memberCredits?.data?.add(inputValue).toString()} credits
+          </Text>
           <Button size='xs' onClick={(e) => handleSubmit(e)} loading={loading}>
             CONFIRM
           </Button>

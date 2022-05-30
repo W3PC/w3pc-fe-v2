@@ -108,7 +108,9 @@ const MembersList = () => {
                   }}
                 >
                   <Text weight='bold'>{player.name}</Text>
-                  {player.isHost && (
+                  {(player.isHost ||
+                    player.id ===
+                      '0x88532f5e88f6a1ccd9e64681acc63416594000f4') && (
                     <Badge ml='xs' variant='light' radius='xs'>
                       HOST
                     </Badge>
@@ -126,7 +128,7 @@ const MembersList = () => {
         <Accordion>
           {result.data?.creditPools[0].activeMembers.map((player) => (
             <Accordion.Item
-              label={<AccordionLabel player={player} />}
+              label={<AccordionLabel player={player} account={account} />}
               key={player.id}
             >
               <HostControls
@@ -148,7 +150,8 @@ const AccordionLabel = ({ player }) => {
     <Group noWrap position='apart'>
       <Text weight='bold'>
         {player.name}
-        {player.isHost ? (
+        {player.isHost ||
+        player.id === '0x88532f5e88f6a1ccd9e64681acc63416594000f4' ? (
           <Badge ml='xs' variant='light' radius='xs'>
             HOST
           </Badge>

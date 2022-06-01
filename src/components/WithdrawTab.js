@@ -9,12 +9,14 @@ import {
 } from '../notifications/txnNotification'
 import { creditPoolAddress } from '../constants'
 import creditPoolAbi from '../constants/abis/CreditPool.json'
+import { useSessionEvents } from '../hooks/useSessionEvents'
 
 const WithdrawTab = ({ userCredits }) => {
   const [withdrawValue, setWithdrawValue] = useState('')
   const [withdrawError, setWithdrawError] = useState('')
   const [loading, setLoading] = useState(false)
   const addRecentTransaction = useAddRecentTransaction()
+  const { addSessionCreditEvent, addSessionTransaction } = useSessionEvents()
 
   const withdrawCredit = useContractWrite(
     {
@@ -37,6 +39,11 @@ const WithdrawTab = ({ userCredits }) => {
             .wait()
             .then((data) => {
               if (data) {
+                const bigValue = BigNumber.from(0).sub(
+                  BigNumber.from(withdrawValue.replace(/\D/g, ''))
+                )
+                addSessionCreditEvent(bigValue)
+                addSessionTransaction(bigValue.toString(), data.transactionHash)
                 updatePendingTxn(hash)
                 setWithdrawValue('')
                 setWithdrawError('')

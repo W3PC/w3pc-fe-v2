@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { useQuery } from 'urql'
 import {
   Center,
@@ -14,6 +14,8 @@ import { creditPoolAddress, usdcAddress } from '../constants'
 import creditPoolAbi from '../constants/abis/CreditPool.json'
 import { useContractRead, useAccount, erc20ABI } from 'wagmi'
 import HostControls from './HostControl'
+import { useSessionEvents } from '../hooks/useSessionEvents'
+import { utils } from 'ethers'
 
 const MembersList = () => {
   const account = useAccount()
@@ -99,27 +101,7 @@ const MembersList = () => {
           <tbody>
             {/* TODO: Add sorting so players with most credits are at the top*/}
             {result.data?.creditPools[0].activeMembers.map((player) => (
-              <tr key={player.id}>
-                <td
-                  style={{
-                    display: 'flex',
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                  }}
-                >
-                  <Text weight='bold'>{player.name}</Text>
-                  {(player.isHost ||
-                    player.id ===
-                      '0x88532f5e88f6a1ccd9e64681acc63416594000f4') && (
-                    <Badge ml='xs' variant='light' radius='xs'>
-                      HOST
-                    </Badge>
-                  )}
-                </td>
-                <td style={{ textAlign: 'right' }}>
-                  <Text weight='bold'>{player.credits}</Text>
-                </td>
-              </tr>
+              <AccordionLabel player={player} key={player.id} table />
             ))}
           </tbody>
         )}
@@ -128,7 +110,7 @@ const MembersList = () => {
         <Accordion>
           {result.data?.creditPools[0].activeMembers.map((player) => (
             <Accordion.Item
-              label={<AccordionLabel player={player} account={account} />}
+              label={<AccordionLabel player={player} />}
               key={player.id}
             >
               <HostControls
@@ -145,23 +127,61 @@ const MembersList = () => {
   )
 }
 
-const AccordionLabel = ({ player }) => {
-  return (
-    <Group noWrap position='apart'>
-      <Text weight='bold'>
-        {player.name}
-        {player.isHost ||
-        player.id === '0x88532f5e88f6a1ccd9e64681acc63416594000f4' ? (
-          <Badge ml='xs' variant='light' radius='xs'>
-            HOST
-          </Badge>
-        ) : (
-          ''
-        )}
-      </Text>
-      <Text weight='bold'>{player.credits}</Text>
-    </Group>
-  )
+const AccordionLabel = ({ player, table }) => {
+  const [credits, setCredits] = useState(player.credits)
+  const { sessionEvents } = useSessionEvents()
+
+  const checkSumAddress = utils.getAddress(player.id)
+
+  useEffect(() => {
+    if (sessionEvents[checkSumAddress]?.credits) {
+      setCredits(
+        sessionEvents[checkSumAddress].credits.add(player.credits).toString()
+      )
+    }
+  }, [sessionEvents[checkSumAddress]?.credits, player.credits, player.id])
+
+  if (table) {
+    return (
+      <tr key={player.id}>
+        <td
+          style={{
+            display: 'flex',
+            flexDirection: 'row',
+            alignItems: 'center',
+          }}
+        >
+          <Text weight='bold'>{player.name}</Text>
+          {(player.isHost ||
+            player.id === '0x88532f5e88f6a1ccd9e64681acc63416594000f4') && (
+            <Badge ml='xs' variant='light' radius='xs'>
+              HOST
+            </Badge>
+          )}
+        </td>
+        <td style={{ textAlign: 'right' }}>
+          <Text weight='bold'>{credits}</Text>
+        </td>
+      </tr>
+    )
+  } else {
+    return (
+      <Group noWrap position='apart'>
+        <Text weight='bold'>
+          {player.name}
+          {player.isHost ||
+          player.id === '0x88532f5e88f6a1ccd9e64681acc63416594000f4' ? (
+            <Badge ml='xs' variant='light' radius='xs'>
+              HOST
+            </Badge>
+          ) : (
+            ''
+          )}
+        </Text>
+        <Text weight='bold'>{credits}</Text>
+      </Group>
+    )
+  }
 }
 
 export default MembersList

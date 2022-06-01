@@ -13,6 +13,7 @@ import {
 import { jsonRpcProvider } from 'wagmi/providers/jsonRpc'
 import { publicProvider } from 'wagmi/providers/public'
 import { NotificationsProvider } from '@mantine/notifications'
+import { SessionsEventsProvider } from './hooks/useSessionEvents'
 import Layout from './components/Layout'
 
 import { chains as chain } from './constants'
@@ -56,9 +57,11 @@ function App() {
           theme={darkTheme()}
         >
           <MantineProvider theme={{ colorScheme: 'dark' }} withGlobalStyles>
-            <NotificationsProvider>
-              <Layout />
-            </NotificationsProvider>
+            <SessionsEventsProvider>
+              <NotificationsProvider>
+                <Layout />
+              </NotificationsProvider>
+            </SessionsEventsProvider>
           </MantineProvider>
         </RainbowKitProvider>
       </SubGraphProvider>

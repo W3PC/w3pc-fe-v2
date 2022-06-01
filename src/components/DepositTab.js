@@ -17,6 +17,7 @@ import {
   showPendingTxn,
   updatePendingTxn,
 } from '../notifications/txnNotification'
+import { useSessionEvents } from '../hooks/useSessionEvents'
 
 const DepositTab = ({ userUsdc, usdcAllowance }) => {
   const [depositValue, setDepositValue] = useState('')
@@ -25,6 +26,8 @@ const DepositTab = ({ userUsdc, usdcAllowance }) => {
   const [approved, setApproved] = useState(false)
   const [unlimitedApproval, setUnlimitedApproval] = useState(false)
   const addRecentTransaction = useAddRecentTransaction()
+  const { addSessionCreditEvent, addSessionTransaction, sessionEvents } =
+    useSessionEvents()
 
   const approveUsdc = useContractWrite(
     {
@@ -91,6 +94,9 @@ const DepositTab = ({ userUsdc, usdcAllowance }) => {
             .wait()
             .then((data) => {
               if (data) {
+                const bigValue = BigNumber.from(depositValue.replace(/\D/g, ''))
+                addSessionCreditEvent(bigValue)
+                addSessionTransaction(bigValue.toString(), data.transactionHash)
                 updatePendingTxn(hash)
                 setDepositValue('')
                 setDepositError('')

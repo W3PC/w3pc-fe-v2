@@ -1,10 +1,19 @@
 import { Table, Text, Loader } from '@mantine/core'
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { useAccount } from 'wagmi'
 import { useQuery } from 'urql'
+import { useSessionEvents } from '../hooks/useSessionEvents'
 
 const RecentTransactions = () => {
+  const [sessionTxns, setSessionTxns] = useState([])
   const account = useAccount()
+  const { sessionTransactions } = useSessionEvents()
+
+  useEffect(() => {
+    if (sessionTransactions) {
+      setSessionTxns([...sessionTransactions])
+    }
+  }, [sessionTransactions])
 
   const activeMembersQuery = `
   {
@@ -19,8 +28,6 @@ const RecentTransactions = () => {
   const [result] = useQuery({
     query: activeMembersQuery,
   })
-
-  console.log(result)
 
   if (!account?.data?.address) {
     return <div></div>
@@ -44,7 +51,7 @@ const RecentTransactions = () => {
         </tr>
       </thead>
       <tbody>
-        {result.data?.member?.transactions?.map((txn) => (
+        {sessionTxns.concat(result.data?.member?.transactions).map((txn) => (
           <tr key={txn.id}>
             <td>
               <Text color={+txn.amount < 0 ? 'red' : 'green'}>
@@ -93,6 +100,8 @@ function time2TimeAgo(ts) {
   }
   if (seconds > 60) {
     return Math.floor(seconds / 60) + ' minutes ago'
+  } else {
+    return 'Just Now'
   }
 }
 

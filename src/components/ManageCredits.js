@@ -2,12 +2,14 @@ import React from 'react'
 import { Tabs } from '@mantine/core'
 import { useContractRead, erc20ABI, useAccount } from 'wagmi'
 import { usdcAddress, creditPoolAddress } from '../constants'
-import creditPoolAbi from '../constants/abis/CreditPool.json'
 import DepositTab from './DepositTab'
 import WithdrawTab from './WithdrawTab'
+import { useSessionEvents } from '../hooks/useSessionEvents'
 
 const ManageCredits = () => {
   const account = useAccount()
+
+  const { userCredits } = useSessionEvents()
 
   const usdcAllowance = useContractRead(
     {
@@ -37,19 +39,6 @@ const ManageCredits = () => {
       onError(error) {
         console.log(error)
       },
-      watch: true,
-    }
-  )
-
-  const userCredits = useContractRead(
-    {
-      addressOrName: creditPoolAddress,
-      contractInterface: creditPoolAbi,
-    },
-    'memberCredits',
-    {
-      args: account?.data?.address,
-      enabled: account?.data?.address ? true : false,
       watch: true,
     }
   )

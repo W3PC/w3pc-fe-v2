@@ -38,6 +38,7 @@ const RecentTransactions = () => {
   if (result.error) {
     return <Text>There was an error loading your recent transactions</Text>
   }
+  console.log(result)
   return (
     <Table>
       <thead>
@@ -51,21 +52,21 @@ const RecentTransactions = () => {
         </tr>
       </thead>
       <tbody>
-        { (result.data?.member?.transactions || sessionTxns) && 
-          sessionTxns.concat(result.data.member.transactions).map((txn) => (
-          <tr key={txn.id}>
-            <td>
-              <Text color={+txn.amount < 0 ? 'red' : 'green'}>
-                {txn.amount}
-              </Text>
-            </td>
-            <td style={{ textAlign: 'right' }}>
-              <Text color={+txn.amount < 0 ? 'red' : 'green'}>
-                {time2TimeAgo(txn.timeStamp)}
-              </Text>
-            </td>
-          </tr>
-        ))}
+        {(result?.data?.member?.transactions || sessionTxns[0]) &&
+          sessionTxns.concat(result?.data?.member?.transactions).map((txn) => (
+            <tr key={txn.id}>
+              <td>
+                <Text color={+txn.amount < 0 ? 'red' : 'green'}>
+                  {txn.amount}
+                </Text>
+              </td>
+              <td style={{ textAlign: 'right' }}>
+                <Text color={+txn.amount < 0 ? 'red' : 'green'}>
+                  {time2TimeAgo(txn.timeStamp)}
+                </Text>
+              </td>
+            </tr>
+          ))}
       </tbody>
     </Table>
   )

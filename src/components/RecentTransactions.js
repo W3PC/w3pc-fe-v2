@@ -51,7 +51,8 @@ const RecentTransactions = () => {
         </tr>
       </thead>
       <tbody>
-        {sessionTxns.concat(result.data?.member?.transactions).map((txn) => (
+        { (result.data?.member?.transactions || sessionTxns) && 
+          sessionTxns.concat(result.data.member.transactions).map((txn) => (
           <tr key={txn.id}>
             <td>
               <Text color={+txn.amount < 0 ? 'red' : 'green'}>

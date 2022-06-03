@@ -9,16 +9,28 @@ import {
   Badge,
   Accordion,
   Group,
+  TextInput,
 } from '@mantine/core'
-import { creditPoolAddress, usdcAddress } from '../constants'
+import { creditPoolAddress, membershipAddress, usdcAddress } from '../constants'
 import creditPoolAbi from '../constants/abis/CreditPool.json'
-import { useContractRead, useAccount, erc20ABI } from 'wagmi'
+import membershipAbi from '../constants/abis/Membership.json'
+import {
+  useContractRead,
+  useAccount,
+  erc20ABI,
+  useContract,
+  useProvider,
+} from 'wagmi'
 import HostControls from './HostControl'
 import { useSessionEvents } from '../hooks/useSessionEvents'
 import { utils } from 'ethers'
 
 const MembersList = () => {
   const account = useAccount()
+  const [hostSearch, setHostSearch] = useState('')
+  const [inputError, setInputError] = useState('')
+  const [hostAddedMembers, setHostAddedMembers] = useState([])
+  const provider = useProvider()
 
   const isHost = useContractRead(
     {
@@ -55,6 +67,18 @@ const MembersList = () => {
     }
   )
 
+  const creditPoolContract = useContract({
+    addressOrName: creditPoolAddress,
+    contractInterface: creditPoolAbi,
+    signerOrProvider: provider,
+  })
+
+  const membershipContract = useContract({
+    addressOrName: membershipAddress,
+    contractInterface: membershipAbi,
+    signerOrProvider: provider,
+  })
+
   // TODO: We are currently saving all addresses in the subGraph as lowercase versions of the address, need to check with zaz and see if thats intentional or problematic. For now im just going to lowercase any addresses i pass in as queries
   const activeMembersQuery = `
   {
@@ -72,6 +96,59 @@ const MembersList = () => {
     query: activeMembersQuery,
   })
 
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+
+    // Check if it is an address
+    if (
+      hostSearch.length === 42 &&
+      hostSearch[0] === '0' &&
+      hostSearch[1] === 'x'
+    ) {
+      try {
+        const checkSum = utils.getAddress(hostSearch)
+        const credits = await creditPoolContract.memberCredits(checkSum)
+        setHostAddedMembers([
+          ...hostAddedMembers,
+          {
+            id: checkSum,
+            name: checkSum,
+            isHost: false,
+            credits: credits.toString(),
+            key: checkSum + '6969696969',
+          },
+        ])
+        setHostSearch('')
+      } catch (error) {
+        console.log(error)
+        setInputError('Please enter a valid address or account name')
+        setHostSearch('')
+        return
+      }
+    } else {
+      try {
+        const nameAsBytes = utils.formatBytes32String(hostSearch)
+        const nameAddress = await membershipContract.addressOfName(nameAsBytes)
+        const credits = await creditPoolContract.memberCredits(nameAddress)
+        setHostAddedMembers([
+          ...hostAddedMembers,
+          {
+            name: hostSearch,
+            id: nameAddress,
+            credits: credits.toString(),
+            isHost: false,
+            key: nameAddress + '6969696969',
+          },
+        ])
+        setHostSearch('')
+      } catch (error) {
+        console.log(error)
+        setInputError('Please enter a valid address or account name')
+        setHostSearch('')
+      }
+    }
+  }
+
   if (result.fetching) {
     return (
       <Center>
@@ -83,9 +160,26 @@ const MembersList = () => {
     return (
       <Text>There was an error fetching member data please try again....</Text>
     )
+  console.log(result)
 
   return (
     <Container style={{ height: 'auto', width: '100%' }} m='sm'>
+      {isHost.data && (
+        <form onSubmit={handleSubmit}>
+          <TextInput
+            size='xs'
+            onChange={(e) => setHostSearch(e.currentTarget.value)}
+            value={hostSearch}
+            error={inputError}
+            styles={(theme) => ({
+              input: {
+                backgroundColor: theme.colors.dark[4],
+              },
+            })}
+            label='Add member by account name or address'
+          />
+        </form>
+      )}
       <Table>
         <thead>
           <tr>
@@ -108,19 +202,21 @@ const MembersList = () => {
       </Table>
       {isHost.data && (
         <Accordion>
-          {result.data?.creditPools[0].activeMembers.map((player) => (
-            <Accordion.Item
-              label={<AccordionLabel player={player} />}
-              key={player.id}
-            >
-              <HostControls
-                player={player}
-                totalGameCredits={totalGameCredits}
-                totalGameUsdc={totalGameUsdc}
-                refetch={reexecuteQuery}
-              />
-            </Accordion.Item>
-          ))}
+          {hostAddedMembers
+            .concat(result.data?.creditPools[0].activeMembers)
+            .map((player) => (
+              <Accordion.Item
+                label={<AccordionLabel player={player} />}
+                key={player.id}
+              >
+                <HostControls
+                  player={player}
+                  totalGameCredits={totalGameCredits}
+                  totalGameUsdc={totalGameUsdc}
+                  refetch={reexecuteQuery}
+                />
+              </Accordion.Item>
+            ))}
         </Accordion>
       )}
     </Container>
@@ -131,15 +227,14 @@ const AccordionLabel = ({ player, table }) => {
   const [credits, setCredits] = useState(player.credits)
   const { sessionEvents } = useSessionEvents()
 
-  const checkSumAddress = utils.getAddress(player.id)
-
   useEffect(() => {
+    const checkSumAddress = utils.getAddress(player.id)
     if (sessionEvents[checkSumAddress]?.credits) {
       setCredits(
         sessionEvents[checkSumAddress].credits.add(player.credits).toString()
       )
     }
-  }, [sessionEvents[checkSumAddress]?.credits, player.credits, player.id])
+  }, [sessionEvents?.credits, player.credits, player.id])
 
   if (table) {
     return (

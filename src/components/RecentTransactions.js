@@ -38,7 +38,7 @@ const RecentTransactions = () => {
   if (result.error) {
     return <Text>There was an error loading your recent transactions</Text>
   }
-  console.log(result)
+
   return (
     <Table>
       <thead>
